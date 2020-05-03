@@ -1,26 +1,98 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+/* eslint-disable react/no-unused-state */
+import React, { Component } from 'react';
+import shortid from 'shortid';
+import Section from './components/Section/Section';
+import ContactList from './components/ContactList/ContactList';
+import ContactForm from './components/ContactForm/ContactForm';
+import Filter from './components/Filter/Filter';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+class App extends Component {
+  state = {
+    contacts: [
+      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+    ],
+    filter: '',
+  };
+
+  componentDidMount = () => {
+    const localContacts = localStorage.getItem('contacts');
+    if (localContacts) {
+      this.setState({ contacts: JSON.parse(localContacts) });
+    }
+  };
+
+  componentDidUpdate = prevState => {
+    if (prevState.contacts !== this.state.contacts) {
+      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
+    }
+  };
+
+  handleFormSubmit = e => {
+    e.preventDefault();
+
+    const { name, number } = e.target.elements;
+    const { contacts } = this.state;
+    const newContact = {
+      id: shortid.generate(),
+      name: name.defaultValue,
+      number: number.defaultValue,
+    };
+
+    if (contacts.find(contact => contact.name === name.defaultValue)) {
+      // eslint-disable-next-line no-alert
+      alert(`${name.defaultValue} is already in contacts.`);
+    } else {
+      this.setState(prevState => ({
+        contacts: [...prevState.contacts, newContact],
+        name: '',
+        number: '',
+      }));
+    }
+  };
+
+  handleDelete = e =>
+    this.setState({
+      // eslint-disable-next-line react/no-access-state-in-setstate
+      contacts: this.state.contacts.filter(el => el.id !== e.target.id),
+    });
+
+  changeFilterValue = e => this.setState({ filter: e.target.value });
+
+  getFilteredContacts = () => {
+    const { contacts, filter } = this.state;
+    return contacts.filter(item =>
+      item.name.toLowerCase().includes(filter.toLowerCase()),
+    );
+  };
+
+  render() {
+    const { contacts, filter } = this.state;
+    const filteredContacts = this.getFilteredContacts(filter, contacts);
+    return (
+      <>
+        <Section title="Phonebook">
+          <ContactForm handleSubmit={this.handleFormSubmit} />
+        </Section>
+        {contacts.length > 0 && (
+          <Section title="Contacts">
+            {contacts.length > 1 && (
+              <Filter
+                filter={filter}
+                handleChangeFilter={this.changeFilterValue}
+              />
+            )}
+            <ContactList
+              contactList={filteredContacts}
+              handleRemove={this.handleDelete}
+            />
+          </Section>
+        )}
+      </>
+    );
+  }
 }
 
 export default App;
